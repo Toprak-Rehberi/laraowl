@@ -10,6 +10,7 @@
   <a href="#features">Features</a> •
   <a href="#quick-start">Quick Start</a> •
   <a href="#client-integration">Client Integration</a> •
+  <a href="#connect-an-ai-agent-mcp">AI Agents</a> •
   <a href="#architecture">Architecture</a> •
   <a href="#production-deployment">Production</a> •
   <a href="#license">License</a>
@@ -134,6 +135,13 @@ Set custom performance budgets per project:
 - All incoming data is processed via **Laravel Queues**
 - Zero-latency API responses — data is queued immediately
 - Broadcasting happens in the background worker
+
+### AI Agent Access (MCP)
+
+- **Model Context Protocol server** so AI coding agents can work with your data
+- Read projects, list and inspect issues, and query telemetry
+- Update issue status and comment on issues from the agent
+- Scoped to the user's teams with **Sanctum tokens**; record output is sanitized
 
 ---
 
@@ -286,6 +294,27 @@ LOG_STACK=stack,laraowl
 ```
 
 That's it. Your application will immediately begin sending telemetry data to the LaraOwl server.
+
+---
+
+## Connect an AI Agent (MCP)
+
+LaraOwl exposes a [Model Context Protocol](https://modelcontextprotocol.io) server so AI coding agents can read projects, triage issues and query telemetry on your behalf. Every tool is scoped to your teams.
+
+Generate a token from **Settings → MCP Tokens**, or via Artisan:
+
+```bash
+php artisan laraowl:mcp-token user@example.com --name=mcp
+```
+
+Then point your agent at the server. For Claude Code:
+
+```bash
+claude mcp add --transport http laraowl https://your-laraowl-server.com/mcp \
+  --header "Authorization: Bearer <token>"
+```
+
+Available tools: `list-projects`, `list-issues`, `get-issue`, `query-telemetry`, `update-issue-status`, `comment-on-issue`.
 
 ---
 

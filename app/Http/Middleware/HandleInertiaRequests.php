@@ -96,6 +96,9 @@ class HandleInertiaRequests extends Middleware
             'period' => fn () => $request->query('period', '1h'),
             'from' => fn () => $request->query('from'),
             'to' => fn () => $request->query('to'),
+            'flash' => [
+                'mcpToken' => fn () => $request->session()->get('mcpToken'),
+            ],
         ];
     }
 }

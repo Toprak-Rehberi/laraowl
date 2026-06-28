@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Settings\McpTokenController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\SecurityController;
 use App\Http\Controllers\Teams\TeamController;
@@ -25,6 +26,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('user-password.update');
 
     Route::inertia('settings/appearance', 'settings/appearance')->name('appearance.edit');
+
+    Route::get('settings/mcp-tokens', [McpTokenController::class, 'index'])->name('mcp-tokens.index');
+    Route::post('settings/mcp-tokens', [McpTokenController::class, 'store'])->name('mcp-tokens.store');
+    Route::delete('settings/mcp-tokens/{token}', [McpTokenController::class, 'destroy'])->name('mcp-tokens.destroy');
 
     Route::middleware(EnsureTeamMembership::class)->group(function () {
         Route::get('settings/teams/{team}', [TeamController::class, 'edit'])->name('teams.edit');
