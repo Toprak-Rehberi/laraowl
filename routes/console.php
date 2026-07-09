@@ -11,3 +11,4 @@ use Illuminate\Support\Facades\Schedule;
 
 Schedule::command('projects:check-health')->everyThirtySeconds();
 Schedule::command('model:prune')->daily();
+Schedule::command('laraowl:update --check')->daily();

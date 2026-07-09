@@ -4,6 +4,9 @@ namespace App\Http\Middleware;
 
 use App\Models\Project;
 use App\Models\Team;
+use App\Models\User;
+use App\Services\UpdateService;
+use App\Support\Version;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -96,9 +99,28 @@ class HandleInertiaRequests extends Middleware
             'period' => fn () => $request->query('period', '1h'),
             'from' => fn () => $request->query('from'),
             'to' => fn () => $request->query('to'),
+            'version' => Version::current(),
+            'update' => fn () => $this->pendingUpdate($user),
             'flash' => [
                 'mcpToken' => fn () => $request->session()->get('mcpToken'),
             ],
         ];
+    }
+
+    /**
+     * Get the release this instance should update to, for the operator.
+     *
+     * Only the instance operator is shown the update banner, since nobody else
+     * can act on it. This reads from cache only and never blocks the request.
+     *
+     * @return array{version: string, name: string, url: string, notes: string|null, publishedAt: string|null}|null
+     */
+    protected function pendingUpdate(?User $user): ?array
+    {
+        if (! $user?->isInstanceOperator()) {
+            return null;
+        }
+
+        return app(UpdateService::class)->pendingUpdate()?->toArray();
     }
 }

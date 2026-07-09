@@ -1,5 +1,6 @@
 import type { Auth } from '@/types/auth';
 import type { Team } from '@/types/teams';
+import type { Release } from '@/types/update';
 
 declare module '@inertiajs/core' {
     export interface InertiaConfig {
@@ -9,6 +10,8 @@ declare module '@inertiajs/core' {
             sidebarOpen: boolean;
             currentTeam: Team | null;
             teams: Team[];
+            version: string;
+            update: Release | null;
             [key: string]: unknown;
         };
     }

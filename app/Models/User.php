@@ -21,6 +21,18 @@ class User extends Authenticatable
     use HasApiTokens, HasFactory, HasTeams, Notifiable, TwoFactorAuthenticatable;
 
     /**
+     * Determine whether this user administers the LaraOwl instance itself.
+     *
+     * The first account created belongs to whoever installed LaraOwl, and is
+     * therefore the only user with shell access to act on things like updates.
+     * Every user owns a personal team, so team ownership cannot identify them.
+     */
+    public function isInstanceOperator(): bool
+    {
+        return $this->id === once(fn () => static::min('id'));
+    }
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>
