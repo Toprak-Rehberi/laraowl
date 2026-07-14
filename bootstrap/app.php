@@ -19,6 +19,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Traefik/Coolify arkasında X-Forwarded-Proto'ya güven — yoksa Laravel
+        // istekleri http sanır ve asset/url'ler http üretilir (mixed content).
+        $middleware->trustProxies(at: env('TRUSTED_PROXIES', '*'));
+
         $middleware->alias([
             'laraowl.token' => VerifyLaraowlToken::class,
         ]);
