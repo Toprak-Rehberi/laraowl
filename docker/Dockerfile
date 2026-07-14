@@ -62,6 +62,10 @@ RUN npm install \
   && rm -rf node_modules \
   && npm cache clean --force
 
+# public named-volume ilk dolumdan sonra image güncellemelerini görmez —
+# el değmemiş kopyayı sakla, entrypoint her açılışta volume'a senkronlar.
+RUN cp -a /usr/share/caddy/html/public /opt/public-dist
+
 # Set permissions and prepare Laravel
 RUN php artisan package:discover --ansi \
   && chown -R www-data:www-data /usr/share/caddy/html/storage \

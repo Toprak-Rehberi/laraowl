@@ -6,11 +6,20 @@ main() {
         # su-exec drops root privileges and runs the command as www-data
         exec su-exec www-data "$@"
     else
+        sync_public_assets
         prepare_storage
         wait_for_db
         run_migrations
         optimize_app
         run_server "$@"
+    fi
+}
+
+sync_public_assets() {
+    # Named volume eski build'i maskeler — image'daki taze kopyayı volume'a bas.
+    if [ -d /opt/public-dist ]; then
+        echo "Syncing public assets into shared volume..."
+        cp -a /opt/public-dist/. /usr/share/caddy/html/public/
     fi
 }
 
