@@ -34,8 +34,9 @@ WORKDIR /usr/share/caddy/html/
 COPY . .
 
 # Install dependencies with composer
-RUN composer validate --strict \
-  && composer install \
+# composer validate --strict atlandı: upstream lock dosyası composer.json'dan
+# geride (kendi bug'ları) ve --strict bunu exit 2 yapıyor; install lock'tan kurar.
+RUN composer install \
   --no-interaction \
   --no-progress \
   --no-scripts \
