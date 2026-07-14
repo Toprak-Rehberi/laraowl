@@ -73,6 +73,8 @@ RUN php artisan package:discover --ansi \
   && chmod -R 775 /usr/share/caddy/html/storage \
   && chmod -R 775 /usr/share/caddy/html/bootstrap/cache
 
+COPY ./docker/fpm-pool.conf /usr/local/etc/php-fpm.d/zz-laraowl.conf
+
 COPY ./docker/php-fpm-entrypoint /usr/local/bin/php-entrypoint
 
 RUN chmod a+x /usr/local/bin/*
