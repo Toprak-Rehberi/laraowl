@@ -43,6 +43,19 @@ RUN composer install \
   --no-dev \
   && composer clear-cache
 
+# Vite değişkenleri build-arg'dan ENV'e — Coolify ARG bildirse de değer npm
+# sürecine düşmüyordu; ENV hem değeri garantiler hem değişince cache'i patlatır.
+ARG VITE_APP_NAME
+ARG VITE_REVERB_APP_KEY
+ARG VITE_REVERB_HOST
+ARG VITE_REVERB_PORT
+ARG VITE_REVERB_SCHEME
+ENV VITE_APP_NAME=$VITE_APP_NAME \
+    VITE_REVERB_APP_KEY=$VITE_REVERB_APP_KEY \
+    VITE_REVERB_HOST=$VITE_REVERB_HOST \
+    VITE_REVERB_PORT=$VITE_REVERB_PORT \
+    VITE_REVERB_SCHEME=$VITE_REVERB_SCHEME
+
 # Install NPM dependencies and build frontend assets
 RUN npm install \
   && npm run build \
