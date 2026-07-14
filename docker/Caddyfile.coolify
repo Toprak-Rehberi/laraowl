@@ -1,5 +1,13 @@
 # Coolify/traefik arkasında çalışan varyant: TLS'i traefik sonlandırır,
 # caddy yalnız :80 dinler (host adı eşleşmesi yok — traefik doğru host'u yollar).
+
+# Traefik docker ağından gelir; güvenilir sayılmazsa Caddy X-Forwarded-Proto'yu
+# ezer (https bilgisi PHP'ye ulaşmaz -> http asset URL'leri / mixed content).
+{
+	servers {
+		trusted_proxies static private_ranges
+	}
+}
 :80 {
 	root * /usr/share/caddy/html/public
 
