@@ -78,7 +78,9 @@ services:
       - laraowl-network
 
   caddy:
-    image: caddy:2-alpine
+    build:
+      context: .
+      dockerfile: docker/caddy.Dockerfile
     restart: unless-stopped
     depends_on:
       app:
@@ -86,7 +88,6 @@ services:
     expose:
       - "80"
     volumes:
-      - ./docker/Caddyfile.coolify:/etc/caddy/Caddyfile
       - storage:/usr/share/caddy/html/storage:rw
       - public:/usr/share/caddy/html/public:ro
       - caddy_data:/data
