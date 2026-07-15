@@ -7,6 +7,7 @@ use App\Actions\Fortify\ResetUserPassword;
 use App\Http\Responses\LoginResponse;
 use App\Http\Responses\RegisterResponse;
 use App\Http\Responses\TwoFactorLoginResponse;
+use App\Models\TeamInvitation;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -74,7 +75,22 @@ class FortifyServiceProvider extends ServiceProvider
             'status' => $request->session()->get('status'),
         ]));
 
-        Fortify::registerView(fn () => Inertia::render('auth/register'));
+        Fortify::registerView(function (Request $request) {
+            $invitation = null;
+
+            if ($code = $request->session()->get('pending_invitation_code')) {
+                $invitation = TeamInvitation::where('code', $code)->first();
+
+                if ($invitation && ! $invitation->isPending()) {
+                    $invitation = null;
+                }
+            }
+
+            return Inertia::render('auth/register', [
+                'invitationEmail' => $invitation?->email,
+                'invitationTeam' => $invitation?->team->name,
+            ]);
+        });
 
         Fortify::twoFactorChallengeView(fn () => Inertia::render('auth/two-factor-challenge'));
 

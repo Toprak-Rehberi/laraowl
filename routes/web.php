@@ -142,9 +142,11 @@ Route::prefix('{current_team}')
         Route::post('projects', [ProjectController::class, 'store'])->name('projects.store');
     });
 
-Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('invitations/{invitation}/accept', [TeamInvitationController::class, 'accept'])->name('invitations.accept');
+// Guest-accessible: the controller routes unauthenticated invitees to
+// register/login and completes the acceptance after they authenticate.
+Route::get('invitations/{invitation}/accept', [TeamInvitationController::class, 'accept'])->name('invitations.accept');
 
+Route::middleware(['auth', 'verified'])->group(function () {
     // Teams Onboarding/Management
     Route::get('teams', [TeamController::class, 'index'])->name('teams.index');
     Route::get('teams/create', [TeamController::class, 'create'])->name('teams.create');
