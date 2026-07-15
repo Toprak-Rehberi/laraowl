@@ -5,6 +5,7 @@ namespace App\Http\Responses;
 use App\Actions\Teams\AcceptTeamInvitation;
 use App\Models\Team;
 use App\Models\TeamInvitation;
+use Illuminate\Auth\Events\Verified;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\URL;
 use Laravel\Fortify\Contracts\RegisterResponse as RegisterResponseContract;
@@ -64,6 +65,8 @@ class RegisterResponse implements RegisterResponseContract
 
         if (! $user->hasVerifiedEmail()) {
             $user->markEmailAsVerified();
+
+            event(new Verified($user));
         }
 
         return $this->acceptTeamInvitation->handle($user, $invitation);

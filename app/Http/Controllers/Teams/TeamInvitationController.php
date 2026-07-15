@@ -12,6 +12,9 @@ use App\Models\TeamInvitation;
 use App\Models\User;
 use App\Notifications\Teams\TeamInvitation as TeamInvitationNotification;
 use App\Rules\ValidTeamInvitation;
+use Illuminate\Auth\Events\Registered;
+use Illuminate\Auth\Events\Verified;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -130,16 +133,26 @@ class TeamInvitationController extends Controller
         AcceptTeamInvitation $acceptTeamInvitation,
     ): RedirectResponse {
         abort_unless($invitation->isPending(), 403);
-        abort_if(User::where('email', $invitation->email)->exists(), 403);
 
-        $user = $createNewUser->create([
-            'name' => (string) $request->input('name'),
-            'email' => $invitation->email,
-            'password' => (string) $request->input('password'),
-            'password_confirmation' => (string) $request->input('password_confirmation'),
-        ]);
+        try {
+            $user = $createNewUser->create([
+                'name' => (string) $request->input('name'),
+                'email' => $invitation->email,
+                'password' => (string) $request->input('password'),
+                'password_confirmation' => (string) $request->input('password_confirmation'),
+            ]);
+        } catch (UniqueConstraintViolationException) {
+            // Parallel submits for the same invitation: the account now
+            // exists, so route the invitee through the login flow instead.
+            return redirect()->guest(route('login'))
+                ->with('status', __('Log in to accept your team invitation.'));
+        }
+
+        event(new Registered($user));
 
         $user->markEmailAsVerified();
+
+        event(new Verified($user));
 
         Auth::login($user);
         $request->session()->regenerate();
