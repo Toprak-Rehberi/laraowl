@@ -2,15 +2,17 @@
 
 namespace App\Http\Controllers\Teams;
 
+use App\Actions\Teams\AcceptTeamInvitation;
 use App\Enums\TeamRole;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Teams\AcceptTeamInvitationRequest;
 use App\Http\Requests\Teams\CreateTeamInvitationRequest;
 use App\Models\Team;
 use App\Models\TeamInvitation;
+use App\Models\User;
 use App\Notifications\Teams\TeamInvitation as TeamInvitationNotification;
+use App\Rules\ValidTeamInvitation;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Notification;
 use Inertia\Inertia;
@@ -57,26 +59,35 @@ class TeamInvitationController extends Controller
 
     /**
      * Accept the invitation.
+     *
+     * Guests are routed to registration (or login when an account already
+     * exists for the invited email) with the invitation kept in the session,
+     * so the acceptance completes right after they authenticate.
      */
-    public function accept(AcceptTeamInvitationRequest $request, TeamInvitation $invitation): RedirectResponse
+    public function accept(Request $request, TeamInvitation $invitation, AcceptTeamInvitation $acceptTeamInvitation): RedirectResponse
     {
         $user = $request->user();
 
-        DB::transaction(function () use ($user, $invitation) {
-            $team = $invitation->team;
+        if (! $user) {
+            $request->session()->put('pending_invitation_code', $invitation->code);
 
-            $membership = $team->memberships()->firstOrCreate(
-                ['user_id' => $user->id],
-                ['role' => $invitation->role],
-            );
+            if (User::where('email', $invitation->email)->exists()) {
+                return redirect()->guest(route('login'))
+                    ->with('status', __('Log in to accept your team invitation.'));
+            }
 
-            $wasRecentlyCreated = $membership->wasRecentlyCreated;
+            return redirect()->route('register');
+        }
 
-            $invitation->update(['accepted_at' => now()]);
+        validator(
+            ['invitation' => $invitation],
+            ['invitation' => ['required', new ValidTeamInvitation($user)]],
+        )->validate();
 
-            $user->switchTeam($team);
-        });
+        $request->session()->forget('pending_invitation_code');
 
-        return redirect('/dashboard');
+        $team = $acceptTeamInvitation->handle($user, $invitation);
+
+        return redirect("/{$team->slug}/dashboard");
     }
 }

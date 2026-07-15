@@ -7,10 +7,24 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 
-export default function Register() {
+interface RegisterProps {
+    invitationEmail?: string;
+    invitationTeam?: string;
+}
+
+export default function Register({
+    invitationEmail,
+    invitationTeam,
+}: RegisterProps) {
     return (
         <>
             <Head title="Register" />
+            {invitationTeam && (
+                <div className="mb-2 rounded-md bg-muted px-4 py-3 text-sm text-muted-foreground">
+                    You have been invited to join <strong>{invitationTeam}</strong>.
+                    Create your account to accept the invitation.
+                </div>
+            )}
             <Form
                 action="/register"
                 method="post"
@@ -48,6 +62,7 @@ export default function Register() {
                                     tabIndex={2}
                                     autoComplete="email"
                                     name="email"
+                                    defaultValue={invitationEmail}
                                     placeholder="email@example.com"
                                 />
                                 <InputError message={errors.email} />
