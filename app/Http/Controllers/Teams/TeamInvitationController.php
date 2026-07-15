@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Teams;
 
+use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Teams\AcceptTeamInvitation;
 use App\Enums\TeamRole;
 use App\Http\Controllers\Controller;
@@ -13,9 +14,11 @@ use App\Notifications\Teams\TeamInvitation as TeamInvitationNotification;
 use App\Rules\ValidTeamInvitation;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Notification;
 use Inertia\Inertia;
+use Inertia\Response;
 
 class TeamInvitationController extends Controller
 {
@@ -76,7 +79,9 @@ class TeamInvitationController extends Controller
                     ->with('status', __('Log in to accept your team invitation.'));
             }
 
-            return redirect()->route('register');
+            // Fortify's /register may be disabled (ALLOW_REGISTRATION=false),
+            // so invitees get their own invitation-scoped registration route.
+            return redirect()->route('invitations.register', $invitation);
         }
 
         validator(
@@ -84,6 +89,60 @@ class TeamInvitationController extends Controller
             ['invitation' => ['required', new ValidTeamInvitation($user)]],
         )->validate();
 
+        $request->session()->forget('pending_invitation_code');
+
+        $team = $acceptTeamInvitation->handle($user, $invitation);
+
+        return redirect("/{$team->slug}/dashboard");
+    }
+
+    /**
+     * Show the invitation-scoped registration form. Available even when
+     * public registration is disabled: the invitation itself is the gate.
+     */
+    public function register(Request $request, TeamInvitation $invitation): Response|RedirectResponse
+    {
+        if ($request->user()) {
+            return redirect()->route('invitations.accept', $invitation);
+        }
+
+        if (! $invitation->isPending() || User::where('email', $invitation->email)->exists()) {
+            return redirect()->route('login')
+                ->with('status', __('Log in to accept your team invitation.'));
+        }
+
+        return Inertia::render('auth/register', [
+            'invitationEmail' => $invitation->email,
+            'invitationTeam' => $invitation->team->name,
+            'registerAction' => route('invitations.register.store', $invitation),
+        ]);
+    }
+
+    /**
+     * Register the invited user and accept the invitation in one step. The
+     * email is taken from the invitation, never from the request, and counts
+     * as verified: the invitation link was delivered to that mailbox.
+     */
+    public function storeUser(
+        Request $request,
+        TeamInvitation $invitation,
+        CreateNewUser $createNewUser,
+        AcceptTeamInvitation $acceptTeamInvitation,
+    ): RedirectResponse {
+        abort_unless($invitation->isPending(), 403);
+        abort_if(User::where('email', $invitation->email)->exists(), 403);
+
+        $user = $createNewUser->create([
+            'name' => (string) $request->input('name'),
+            'email' => $invitation->email,
+            'password' => (string) $request->input('password'),
+            'password_confirmation' => (string) $request->input('password_confirmation'),
+        ]);
+
+        $user->markEmailAsVerified();
+
+        Auth::login($user);
+        $request->session()->regenerate();
         $request->session()->forget('pending_invitation_code');
 
         $team = $acceptTeamInvitation->handle($user, $invitation);

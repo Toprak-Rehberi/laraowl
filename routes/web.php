@@ -144,7 +144,13 @@ Route::prefix('{current_team}')
 
 // Guest-accessible: the controller routes unauthenticated invitees to
 // register/login and completes the acceptance after they authenticate.
+// The register pair works even with ALLOW_REGISTRATION=false — the
+// invitation itself gates account creation.
 Route::get('invitations/{invitation}/accept', [TeamInvitationController::class, 'accept'])->name('invitations.accept');
+Route::get('invitations/{invitation}/register', [TeamInvitationController::class, 'register'])
+    ->middleware('guest')->name('invitations.register');
+Route::post('invitations/{invitation}/register', [TeamInvitationController::class, 'storeUser'])
+    ->middleware(['guest', 'throttle:10,1'])->name('invitations.register.store');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     // Teams Onboarding/Management
