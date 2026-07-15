@@ -10,11 +10,13 @@ import { Spinner } from '@/components/ui/spinner';
 interface RegisterProps {
     invitationEmail?: string;
     invitationTeam?: string;
+    registerAction?: string;
 }
 
 export default function Register({
     invitationEmail,
     invitationTeam,
+    registerAction,
 }: RegisterProps) {
     return (
         <>
@@ -26,7 +28,7 @@ export default function Register({
                 </div>
             )}
             <Form
-                action="/register"
+                action={registerAction ?? '/register'}
                 method="post"
                 resetOnSuccess={['password', 'password_confirmation']}
                 disableWhileProcessing
@@ -63,6 +65,7 @@ export default function Register({
                                     autoComplete="email"
                                     name="email"
                                     defaultValue={invitationEmail}
+                                    readOnly={!!invitationEmail}
                                     placeholder="email@example.com"
                                 />
                                 <InputError message={errors.email} />
