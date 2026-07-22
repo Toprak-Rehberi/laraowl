@@ -98,12 +98,22 @@ class Record extends Model
      */
     public function prunable()
     {
-        return static::whereExists(function ($query) {
+        // Cut-off is per project (retention_days is a column, not a constant), so it
+        // has to be expressed in SQL rather than precomputed in PHP. The interval
+        // syntax differs per driver — DATE_SUB is MySQL-only and silently fails the
+        // whole prune on PostgreSQL, which is what let the records table grow unbounded.
+        $cutoff = match (DB::connection()->getDriverName()) {
+            'pgsql' => 'records.created_at < NOW() - make_interval(days => projects.retention_days)',
+            'sqlite' => "records.created_at < datetime('now', '-' || projects.retention_days || ' days')",
+            default => 'records.created_at < DATE_SUB(NOW(), INTERVAL projects.retention_days DAY)',
+        };
+
+        return static::whereExists(function ($query) use ($cutoff) {
             $query->select(DB::raw(1))
                 ->from('projects')
                 ->whereColumn('projects.id', 'records.project_id')
                 ->where('projects.retention_days', '>', 0)
-                ->whereRaw('records.created_at < DATE_SUB(NOW(), INTERVAL projects.retention_days DAY)');
+                ->whereRaw($cutoff);
         });
     }
 }
